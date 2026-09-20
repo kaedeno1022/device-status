@@ -1,0 +1,10 @@
+{
+  "name": "device-status",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "閲覧中のブラウザ端末の通信状況とデバイス状況を表示する画面（index.html + logic.js）",
+  "scripts": {
+    "test": "node --test logic.test.js"
+  }
+}

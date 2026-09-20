@@ -1,0 +1,1178 @@
+<meta charset="utf-8">
+<title>ブラウザ端末モニタ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --ground: #F3F6F7;
+    --surface: #FFFFFF;
+    --line: #DCE3E6;
+    --ink: #15212A;
+    --muted: #5A6A74;
+    --accent: #0B7580;
+    --accent-soft: rgba(11, 117, 128, 0.12);
+    --good: #1C7F46;
+    --good-soft: #E1F2E8;
+    --warn: #9A6200;
+    --warn-soft: #FBEFD6;
+    --bad: #B83A26;
+    --bad-soft: #FBE3DE;
+    --na: #7C8A93;
+    --na-soft: #EBEFF1;
+    --sans: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0E1418;
+      --surface: #161F25;
+      --line: #27343C;
+      --ink: #E4ECF0;
+      --muted: #93A3AD;
+      --accent: #4CC2CC;
+      --accent-soft: rgba(76, 194, 204, 0.16);
+      --good: #5BCB8A;
+      --good-soft: rgba(91, 203, 138, 0.14);
+      --warn: #E8B04F;
+      --warn-soft: rgba(232, 176, 79, 0.14);
+      --bad: #F07A66;
+      --bad-soft: rgba(240, 122, 102, 0.15);
+      --na: #7F8F99;
+      --na-soft: rgba(127, 143, 153, 0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0E1418;
+    --surface: #161F25;
+    --line: #27343C;
+    --ink: #E4ECF0;
+    --muted: #93A3AD;
+    --accent: #4CC2CC;
+    --accent-soft: rgba(76, 194, 204, 0.16);
+    --good: #5BCB8A;
+    --good-soft: rgba(91, 203, 138, 0.14);
+    --warn: #E8B04F;
+    --warn-soft: rgba(232, 176, 79, 0.14);
+    --bad: #F07A66;
+    --bad-soft: rgba(240, 122, 102, 0.15);
+    --na: #7F8F99;
+    --na-soft: rgba(127, 143, 153, 0.14);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 48px;
+    display: grid;
+    gap: 20px;
+  }
+
+  /* ヘッダー */
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px 24px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-wrap: balance;
+  }
+  .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .stamp { color: var(--muted); font-size: 13px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  button {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  button:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; border-color: var(--accent); }
+
+  /* 状態チップ */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .lv-good { color: var(--good); background: var(--good-soft); }
+  .lv-warn { color: var(--warn); background: var(--warn-soft); }
+  .lv-bad  { color: var(--bad);  background: var(--bad-soft); }
+  .lv-na   { color: var(--na);   background: var(--na-soft); }
+
+  /* サマリー */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+  .tile .label { font-size: 13px; color: var(--muted); letter-spacing: 0.04em; }
+  .tile .value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1.15;
+  }
+  .tile .value small { font-size: 15px; color: var(--muted); margin-left: 4px; font-weight: 400; }
+  .tile .value.text { font-family: var(--sans); font-size: 26px; font-weight: 700; }
+  .tile .foot { font-size: 12.5px; color: var(--muted); }
+
+  /* パネル */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .panel h2 .hint { font-size: 12.5px; font-weight: 400; color: var(--muted); }
+
+  /* レイテンシグラフ */
+  .chart-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .chart-stats b {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 15px;
+    margin-left: 4px;
+  }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart .axis { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
+  .chart .area { fill: var(--accent-soft); stroke: none; }
+  .chart .ln { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+  .chart .fail { fill: var(--bad); }
+  .chart .over { fill: var(--warn); }
+  .chart-empty { fill: var(--muted); font-family: var(--sans); font-size: 13px; }
+
+  /* 詳細リスト */
+  .details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: start; }
+  dl { margin: 0; display: grid; grid-template-columns: minmax(8em, 40%) 1fr; }
+  dt, dd { padding: 8px 0; border-top: 1px solid var(--line); }
+  dl > :nth-child(1), dl > :nth-child(2) { border-top: none; padding-top: 0; }
+  dt { color: var(--muted); font-size: 13.5px; padding-right: 12px; }
+  dd {
+    margin: 0;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+  dd.na { color: var(--na); font-family: var(--sans); font-size: 13px; }
+  dd .note { display: block; font-family: var(--sans); font-size: 12px; color: var(--muted); }
+
+  footer { color: var(--muted); font-size: 12.5px; line-height: 1.7; max-width: 72ch; }
+  footer p { margin: 0 0 4px; }
+
+  @media (max-width: 760px) {
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .details { grid-template-columns: 1fr; }
+    .tile .value { font-size: 26px; }
+    .tile .value.text { font-size: 22px; }
+  }
+  button:disabled { opacity: 0.55; cursor: default; }
+  button:disabled:hover { border-color: var(--line); }
+  button.primary:disabled:hover { border-color: var(--accent); }
+
+  /* 接続イベント */
+  .events {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 264px;
+    overflow-y: auto;
+  }
+  .events li {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+  }
+  .events li:first-child { border-top: none; padding-top: 0; }
+  .events time { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+  .events .msg { font-size: 14px; overflow-wrap: anywhere; }
+  .events .empty { display: block; color: var(--muted); font-size: 13.5px; border: none; padding: 0; }
+
+  /* ページ読み込みの内訳 */
+  .timing { display: grid; gap: 8px; margin-bottom: 14px; }
+  .t-row {
+    display: grid;
+    grid-template-columns: 8.5em 1fr 5.5em;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+  }
+  .t-label { color: var(--muted); }
+  .t-bar { height: 10px; border-radius: 5px; background: var(--na-soft); overflow: hidden; }
+  .t-bar i { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
+  .t-val { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* 回線速度の測定 */
+  .speed-lead { margin: 0 0 12px; font-size: 13.5px; color: var(--muted); }
+  .speed-result { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 4px 0 12px; }
+  .speed-result div { display: grid; gap: 2px; }
+  .speed-result .label { font-size: 12.5px; color: var(--muted); }
+  .speed-result .value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.15;
+  }
+  .speed-sub { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .speed-error { margin: 0 0 12px; color: var(--bad); font-size: 13.5px; }
+  .speed-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  /* グローバルIP */
+  .ip-intro { margin: 0 0 12px; font-size: 13.5px; color: var(--muted); }
+  .ip-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .ip-error { margin: 0; color: var(--bad); font-size: 13.5px; }
+
+  @media (max-width: 380px) {
+    .tiles { grid-template-columns: 1fr; }
+    .t-row { grid-template-columns: 7em 1fr 4.8em; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>ブラウザ端末モニタ</h1>
+      <p class="sub">このページを開いている端末の回線と本体の状況</p>
+    </div>
+    <div class="controls">
+      <span class="stamp" id="stamp">—</span>
+      <button type="button" id="btn-pause">一時停止</button>
+      <button type="button" id="btn-copy">結果をコピー</button>
+      <button type="button" id="btn-now" class="primary">今すぐ計測</button>
+    </div>
+  </header>
+
+  <section class="tiles" aria-label="概要">
+    <div class="tile">
+      <span class="label">接続状態</span>
+      <span class="value text" id="t-online">—</span>
+      <span class="foot" id="t-online-foot">&nbsp;</span>
+    </div>
+    <div class="tile">
+      <span class="label">応答時間（実測）</span>
+      <span class="value" id="t-latency">—</span>
+      <span class="foot" id="t-latency-foot">&nbsp;</span>
+    </div>
+    <div class="tile">
+      <span class="label">下り帯域（ブラウザ推定）</span>
+      <span class="value" id="t-downlink">—</span>
+      <span class="foot" id="t-downlink-foot">&nbsp;</span>
+    </div>
+    <div class="tile">
+      <span class="label">バッテリー</span>
+      <span class="value" id="t-battery">—</span>
+      <span class="foot" id="t-battery-foot">&nbsp;</span>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="応答時間の推移">
+    <h2>応答時間の推移 <span class="hint">直近 40 回・5 秒間隔</span></h2>
+    <div class="chart-stats">
+      <span>最小<b id="s-min">—</b></span>
+      <span>平均<b id="s-avg">—</b></span>
+      <span>最大<b id="s-max">—</b></span>
+      <span>揺らぎ（ジッター）<b id="s-jit">—</b></span>
+      <span>失敗<b id="s-fail">0</b></span>
+    </div>
+    <svg class="chart" id="chart" viewBox="0 0 640 160" role="img" aria-label="応答時間の折れ線グラフ"></svg>
+  </section>
+
+  <section class="panel" aria-label="接続イベント">
+    <h2>接続イベント <span class="hint">切断・復旧・回線の変化を新しい順に記録</span></h2>
+    <ol class="events" id="events"></ol>
+  </section>
+
+  <section class="panel" aria-label="回線速度の測定">
+    <h2>回線速度の測定 <span class="hint">押した時だけ実行・下りと上りを5秒ずつ</span></h2>
+    <div id="speed-body"></div>
+  </section>
+
+  <section class="details">
+    <div class="panel">
+      <h2>ネットワーク</h2>
+      <dl id="d-net"></dl>
+    </div>
+    <div class="panel">
+      <h2>端末</h2>
+      <dl id="d-device"></dl>
+    </div>
+    <div class="panel">
+      <h2>画面・表示</h2>
+      <dl id="d-screen"></dl>
+    </div>
+    <div class="panel">
+      <h2>メモリ・ストレージ</h2>
+      <dl id="d-storage"></dl>
+    </div>
+    <div class="panel">
+      <h2>ページ読み込みの内訳 <span class="hint">このページを開いた時の実測</span></h2>
+      <div class="timing" id="timing-bars"></div>
+      <dl id="d-timing"></dl>
+    </div>
+    <div class="panel">
+      <h2>グローバルIP・プロバイダ</h2>
+      <div id="ip-body"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>応答時間は、このページの配信元サーバーへ小さなリクエストを送り、返ってくるまでの往復時間を実測した値。4 秒以内に返らなければ失敗として数える。</p>
+    <p>下り帯域・RTT推定・回線品質は Network Information API の推定値で、Chrome 系ブラウザのみ対応。プライバシー保護のため下り帯域は 10 Mbps、回線品質は「4G相当」が上限に丸められる。実際の回線速度の計測（スピードテスト）ではない。</p>
+    <p>回線速度の測定は、ボタンを押した時だけ外部サービス speed.cloudflare.com との間でデータを送受信して行う。下りを5秒、続けて上りを5秒測る。測定値は相手サーバーの混雑や経路の影響を受けるため、契約速度の上限を示すものではない。</p>
+    <p>グローバルIP・プロバイダは、ボタンを押した時だけ外部サービス ipinfo.io に問い合わせて取得する。外部への通信が制限された環境（claude.ai 上の公開ページなど）では取得できない。</p>
+    <p>このページは index.html と logic.js の2ファイルで動く。手元で開く時は、ファイルを直接ダブルクリックせず、置いたフォルダで <code>python3 -m http.server</code> を実行して表示された URL から開く（ブラウザが file:// では別ファイルの読み込みを拒否するため）。</p>
+    <p>「取得不可」はブラウザがその情報を公開していない項目。Safari・Firefox では多くの項目が取得できない。</p>
+  </footer>
+</div>
+
+<script type="module">
+  import {
+    LEVEL_LABEL,
+    levelLatency, levelDownlink, levelBattery,
+    escapeHtml, fmtBytes, fmtTime, fmtMs,
+    connTypeLabel, effectiveTypeLabel, batteryTimeText,
+    latencyEventFor, connChanges, latencyStats, axisMax,
+    fmtMbps, levelSpeed, summarizeSpeed, createRecorder,
+    computeTiming, timingRows, ipRows,
+  } from "./logic.js";
+
+  const INTERVAL_MS = 5000;
+  const TIMEOUT_MS = 4000; // 計測間隔より短くし、次の計測と重ならないようにする
+  const HISTORY = 40;
+  const MAX_EVENTS = 100;
+  const IP_API_URL = "https://ipinfo.io/json";
+  const SPEED_DOWN_URL = "https://speed.cloudflare.com/__down";
+  const SPEED_UP_URL = "https://speed.cloudflare.com/__up";
+  const SPEED_STREAMS = 8;                   // 1本では速い回線を埋められないため並列で通信する
+  const SPEED_DOWN_BYTES = 100_000_000;      // 1リクエストの基準の大きさ。使い切ったら次を繋ぐ
+  const SPEED_UP_BYTES = 10_000_000;         // 送信データはメモリに置くため小さめにする
+  const SPEED_LIMIT_MS = 5000;               // 下り・上りそれぞれの測定時間
+  const SPEED_WINDOW_MS = 250;               // 区間速度の集計幅。記録のまとめ方もこれに合わせる
+  const SPEED_DOWN_MAX_BYTES = 4 * 1024 ** 3; // 通信量の上限。約6.8Gbpsまでは時間側が先に来る
+  const SPEED_UP_MAX_BYTES = 2 * 1024 ** 3;
+
+  const $ = (id) => document.getElementById(id);
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+
+  const state = {
+    samples: [],        // 応答時間(ms)。失敗は null
+    battery: null,
+    uaHigh: null,
+    storage: null,
+    paused: false,
+    timer: null,
+    measuring: false,   // 計測の多重実行防止
+    measuredAt: null,   // 最後に計測した時刻（イベント由来の再描画では進めない）
+    events: [],         // 接続イベント。新しい順
+    prevLatencyLevel: null,
+    prevConn: null,
+    timing: null,       // ページ読み込みの内訳。load 後に確定
+    timingReady: false, // load 後の取得を試みたか（未取得と取得不可を区別する）
+    ip: { status: "idle", data: null }, // idle | loading | shown | error
+    speed: { status: "idle", result: null, progress: null }, // idle | running | done | error
+  };
+
+  // text は固定文字列かエスケープ済みの値だけを渡す
+  function chip(level, text) {
+    return `<span class="chip lv-${level}">${text ?? LEVEL_LABEL[level]}</span>`;
+  }
+
+  // ---------- 接続イベント ----------
+  function logEvent(level, tag, message) {
+    state.events.unshift({ at: new Date(), level, tag, message });
+    if (state.events.length > MAX_EVENTS) state.events.pop();
+    renderEvents();
+  }
+
+  function trackLatency(ms) {
+    const ev = latencyEventFor(state.prevLatencyLevel, ms);
+    if (ev) logEvent(ev.level, ev.tag, ev.message);
+    state.prevLatencyLevel = levelLatency(ms);
+  }
+
+  function snapshotConn() {
+    return conn ? { type: connTypeLabel(conn), effective: effectiveTypeLabel(conn), dlLevel: levelDownlink(conn.downlink ?? null), downlink: conn.downlink } : null;
+  }
+
+  function onConnChange() {
+    const now = snapshotConn();
+    const changes = connChanges(state.prevConn, now);
+    if (changes.length) logEvent("warn", "変化", changes.join("、"));
+    state.prevConn = now;
+    render();
+  }
+
+  function renderEvents() {
+    const el = $("events");
+    if (!state.events.length) {
+      el.innerHTML = `<li class="empty">まだ記録はない</li>`;
+      return;
+    }
+    el.innerHTML = state.events.map((e) =>
+      `<li><time>${fmtTime(e.at)}</time>${chip(e.level, escapeHtml(e.tag))}<span class="msg">${escapeHtml(e.message)}</span></li>`
+    ).join("");
+  }
+
+  // ---------- 計測 ----------
+  // 配信元への往復時間を実測する。キャッシュを避けるためクエリを毎回変える
+  async function measureLatency() {
+    const url = new URL(location.href);
+    url.searchParams.set("_ping", Date.now().toString());
+    // 応答が返らない接続でも打ち切り、失敗として記録する
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const start = performance.now();
+    try {
+      await fetch(url.toString(), { method: "HEAD", cache: "no-store", signal: ctrl.signal });
+      return Math.round(performance.now() - start);
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  // 計測とは独立して更新する。応答が返らなくても計測を止めないため await しない
+  async function refreshStorage() {
+    if (!navigator.storage?.estimate) return;
+    try {
+      state.storage = await navigator.storage.estimate();
+    } catch {
+      state.storage = null;
+    }
+    renderDetails();
+  }
+
+  async function tick() {
+    if (state.measuring) return;
+    state.measuring = true;
+    $("btn-now").disabled = true;
+    refreshStorage();
+    try {
+      const ms = await measureLatency();
+      if (state.speed.status === "running") return; // 測定で回線が埋まっている間の値は採用しない
+      state.samples.push(ms);
+      if (state.samples.length > HISTORY) state.samples.shift();
+      state.measuredAt = new Date();
+      trackLatency(ms);
+    } finally {
+      state.measuring = false;
+      $("btn-now").disabled = state.speed.status === "running";
+    }
+    render();
+  }
+
+  // ---------- ページ読み込みの内訳 ----------
+  function collectTiming() {
+    return computeTiming(performance.getEntriesByType?.("navigation")?.[0]);
+  }
+
+  function renderTiming() {
+    const t = state.timing;
+    const bars = $("timing-bars");
+    if (!state.timingReady) {
+      bars.innerHTML = "";
+      $("d-timing").innerHTML = `<dt>状態</dt><dd class="na">ページの読み込み完了を待っている</dd>`;
+      return;
+    }
+    if (!t) {
+      bars.innerHTML = "";
+      renderList($("d-timing"), timingRows(state.timing));
+      return;
+    }
+    const max = Math.max(1, ...t.phases.map(([, v]) => v));
+    bars.innerHTML = t.phases.map(([label, v]) => {
+      const pct = Math.max(0, (v / max) * 100);
+      return `<div class="t-row"><span class="t-label">${escapeHtml(label)}</span>`
+        + `<span class="t-bar"><i style="width:${pct.toFixed(1)}%"></i></span>`
+        + `<span class="t-val">${fmtMs(Math.max(0, v))}</span></div>`;
+    }).join("");
+    renderList($("d-timing"), timingRows(state.timing));
+  }
+
+  // ---------- 回線速度の測定 ----------
+  // 1本の接続を読み切る。受信した塊ごとにバイト数を通知する
+  async function drainOnce(url, signal, onBytes) {
+    const res = await fetch(url, { cache: "no-store", signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.body) { // ストリーム読み出しに未対応なら、まとめて受け取る
+      onBytes((await res.arrayBuffer()).byteLength);
+      return;
+    }
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      onBytes(value.length);
+    }
+  }
+
+  // 上りは fetch では送信済みのバイト数が分からないため、送信進捗を通知できる
+  // XMLHttpRequest を使う
+  function uploadOnce(url, signal, body, onBytes) {
+    return new Promise((resolve, reject) => {
+      // 打ち切り後に addEventListener しても発火しないため、ここで弾く
+      if (signal.aborted) {
+        reject(new DOMException("打ち切り", "AbortError"));
+        return;
+      }
+      const xhr = new XMLHttpRequest();
+      let sent = 0;
+      const onAbort = () => xhr.abort();
+      xhr.upload.onprogress = (e) => {
+        const delta = e.loaded - sent;
+        sent = e.loaded;
+        if (delta > 0) onBytes(delta);
+      };
+      xhr.onload = () => {
+        signal.removeEventListener("abort", onAbort);
+        xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`HTTP ${xhr.status}`));
+      };
+      xhr.onerror = () => {
+        signal.removeEventListener("abort", onAbort);
+        reject(new Error("通信エラー"));
+      };
+      xhr.onabort = () => {
+        signal.removeEventListener("abort", onAbort);
+        reject(new DOMException("打ち切り", "AbortError"));
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+      xhr.open("POST", url);
+      xhr.send(body);
+    });
+  }
+
+  // 打ち切られるまで繰り返し通信し、測定中ずっと回線を埋めておく。
+  // 1回分で終わると、速い回線ほど測定時間が短くなってしまう。
+  // 戻り値は「打ち切り以外の理由で止まったか」（=この接続は失敗した）
+  async function runStream(once, signal, onBytes) {
+    for (;;) {
+      let moved = 0;
+      try {
+        await once((bytes) => { moved += bytes; onBytes(bytes); });
+      } catch {
+        // 打ち切りは正常終了。それ以外は相手側の異常なので、この接続は諦める
+        return !signal.aborted;
+      }
+      if (signal.aborted) return false;
+      // 0バイトで返ってくる相手にリクエストを連打しないための歯止め
+      if (!moved) return true;
+    }
+  }
+
+  // 下り・上りのどちらかを1回分測る。共通の打ち切り条件（時間・通信量）と集計を持つ
+  async function measurePhase(kind, onProgress) {
+    const recorder = createRecorder(SPEED_WINDOW_MS);
+    const records = recorder.records;
+    const ctrl = new AbortController();
+    // 送信データの生成には時間がかかる。測定開始前に済ませておく
+    const bodies = kind === "up"
+      ? Array.from({ length: SPEED_STREAMS }, (_, i) => new Blob([new Uint8Array(SPEED_UP_BYTES + i * 1_000_000)]))
+      : null;
+    const started = performance.now();
+    const maxBytes = kind === "down" ? SPEED_DOWN_MAX_BYTES : SPEED_UP_MAX_BYTES;
+    let endedBy = null;  // "time" | "bytes" | null（相手側が先に終えた場合）
+    let totalBytes = 0;
+    let elapsedMs = 0;
+    let failedStreams = 0;
+
+    const limit = setTimeout(() => { endedBy ??= "time"; ctrl.abort(); }, SPEED_LIMIT_MS);
+    const onBytes = (bytes) => {
+      totalBytes += bytes;
+      const at = performance.now() - started;
+      recorder.add(at, bytes);
+      onProgress(totalBytes);
+      if (totalBytes >= maxBytes && !ctrl.signal.aborted) {
+        endedBy ??= "bytes";
+        clearTimeout(limit); // 時間切れの表示に上書きされないようにタイマーを止める
+        ctrl.abort();
+      }
+    };
+
+    // 完了時刻が揃うと、次のリクエストを張る間の空白が重なって平均速度が落ちる。
+    // 大きさを少しずつずらして散らす
+    const makeOnce = (i) => kind === "down"
+      ? (report) => drainOnce(`${SPEED_DOWN_URL}?bytes=${SPEED_DOWN_BYTES + i * 3_000_000}`, ctrl.signal, report)
+      : (report) => uploadOnce(SPEED_UP_URL, ctrl.signal, bodies[i], report);
+
+    try {
+      const settled = await Promise.allSettled(Array.from({ length: SPEED_STREAMS },
+        (_, i) => runStream(makeOnce(i), ctrl.signal, onBytes)));
+      failedStreams = settled.filter((r) => r.status === "rejected" || r.value === true).length;
+    } finally {
+      clearTimeout(limit);
+      ctrl.abort();
+      elapsedMs = performance.now() - started;
+      recorder.flush(elapsedMs);
+      if (bodies) bodies.length = 0; // 100MB超を測定後に残さない
+    }
+
+    const summary = records.length
+      ? summarizeSpeed(records, { windowMs: SPEED_WINDOW_MS, durationMs: elapsedMs })
+      : null;
+    return summary?.avgMbps != null ? { ...summary, failedStreams, endedBy } : null;
+  }
+
+  async function runSpeedTest() {
+    if (state.speed.status === "running") return;
+    const previous = state.speed.result; // 失敗しても前回の結果は残す（比較のため）
+    let ticker = null;
+    const progress = { phase: "down", bytes: 0, sec: 0, startedAt: performance.now() };
+    const onProgress = (bytes) => { progress.bytes = bytes; };
+
+    try {
+      // 測定中も前回の結果は保持する（コピー出力から消さないため）
+      state.speed = { status: "running", result: previous, progress };
+      renderSpeed();
+
+      // 測定中は回線が埋まり、応答時間が実態より悪化するので常時監視を止める
+      stop();
+      $("btn-now").disabled = true;
+      logEvent("na", "測定", "回線速度の測定を開始した（常時監視は一時停止）");
+
+      ticker = setInterval(() => {
+        progress.sec = (performance.now() - progress.startedAt) / 1000;
+        renderSpeed();
+      }, 250);
+      const down = await measurePhase("down", onProgress);
+      progress.phase = "up";
+      progress.bytes = 0;
+      progress.sec = 0;
+      progress.startedAt = performance.now();
+      const up = await measurePhase("up", onProgress);
+      state.speed = { status: "done", result: { down, up }, progress: null };
+    } finally {
+      clearInterval(ticker);
+
+      // 先に状態を確定してから監視を再開する。描画やイベント記録より前に戻すことで、
+      // それらが失敗しても常時監視が止まったままにならないようにする
+      const result = state.speed.result;
+      const measured = state.speed.status === "running" ? null : result;
+      if (!measured?.down && !measured?.up) {
+        state.speed = { status: "error", result: previous, progress: null };
+      }
+      $("btn-now").disabled = state.measuring;
+      if (!state.paused) { start(); tick(); }
+
+      renderSpeed();
+      if (state.speed.status === "done") {
+        const r = state.speed.result;
+        const part = (label, v) => `${label} ${v ? `最高 ${fmtMbps(v.peakMbps)}` : "測定失敗"}`;
+        logEvent(levelSpeed(r.down?.peakMbps ?? r.up?.peakMbps), "速度",
+          `${part("下り", r.down)} / ${part("上り", r.up)}`);
+      } else {
+        logEvent("bad", "測定", "回線速度の測定に失敗した");
+      }
+    }
+  }
+
+  // 1方向ぶんの結果を数値2つ（最高・平均）として描く
+  function speedCells(label, r) {
+    if (!r) return `<div><span class="label">${escapeHtml(label)}</span><span class="value">—</span>${chip("bad", "測定失敗")}</div>`;
+    return `<div><span class="label">${escapeHtml(label)} 最高</span><span class="value">${escapeHtml(fmtMbps(r.peakMbps))}</span>${chip(levelSpeed(r.peakMbps))}</div>`
+      + `<div><span class="label">${escapeHtml(label)} 平均</span><span class="value">${escapeHtml(fmtMbps(r.avgMbps))}</span></div>`;
+  }
+
+  function speedNote(label, r) {
+    if (!r) return "";
+    return `${escapeHtml(label)}: ${escapeHtml(fmtBytes(r.totalBytes))} を ${(r.durationMs / 1000).toFixed(1)} 秒。`
+      + (r.endedBy === "bytes" ? "通信量の上限で打ち切った。" : "")
+      + (r.failedStreams ? `${SPEED_STREAMS} 本中 ${r.failedStreams} 本の接続が失敗したため、実際より低く出ている可能性がある。` : "");
+  }
+
+  function renderSpeed() {
+    const body = $("speed-body");
+    const { status, result, progress } = state.speed;
+    const lead = `<p class="speed-lead">外部サーバー（speed.cloudflare.com）との間で ${SPEED_STREAMS} 本を並行して通信し、下り・上りの順に ${SPEED_LIMIT_MS / 1000} 秒ずつ測る。通信量は速度に比例して増え、上限は下り ${fmtBytes(SPEED_DOWN_MAX_BYTES)}・上り ${fmtBytes(SPEED_UP_MAX_BYTES)}。モバイル回線では注意する。測定中は常時監視を止める。ブラウザからの測定は、暗号化の処理と JavaScript の処理、および通信の多重化（HTTP/2 では並行して要求しても1本の接続にまとめられる）が先に限界に達するため、数 Gbps 程度で頭打ちになりやすい。回線そのものの実力を測るなら iperf3 などの専用ツールが必要。</p>`;
+
+    if (status === "running") {
+      const p = progress ?? { phase: "down", bytes: 0, sec: 0 };
+      const phase = p.phase === "down" ? "下り" : "上り";
+      body.innerHTML = lead
+        + `<p class="speed-sub">${phase}を測定中… ${p.sec.toFixed(1)} 秒 / ${escapeHtml(fmtBytes(p.bytes))}</p>`
+        + `<div class="speed-actions"><button type="button" disabled>測定中…</button></div>`;
+      return;
+    }
+
+    let head = "";
+    if (result) {
+      head = (status === "error" ? `<p class="speed-sub">下は前回の測定結果。</p>` : "")
+        + `<div class="speed-result">${speedCells("下り", result.down)}${speedCells("上り", result.up)}</div>`
+        + `<p class="speed-sub">${[speedNote("下り", result.down), speedNote("上り", result.up),
+            "最高速度は立ち上がりを除いた 0.25 秒ごとの最大値。"].filter(Boolean).join(" ")}</p>`;
+    }
+    if (status === "error") {
+      head += `<p class="speed-error">測定できなかった。外部への通信が制限された環境（claude.ai 上の公開ページなど）では使えない。手元で使うには、ファイルを置いたフォルダで <code>python3 -m http.server</code> を実行し、表示された URL から開く。</p>`;
+    }
+
+    body.innerHTML = lead + head
+      + `<div class="speed-actions"><button type="button" id="btn-speed" class="primary">${result ? "もう一度測定する" : "測定する"}</button></div>`;
+    $("btn-speed").addEventListener("click", runSpeedTest);
+  }
+
+  // ---------- グローバルIP ----------
+  async function fetchIp() {
+    state.ip = { status: "loading", data: null };
+    renderIp();
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(IP_API_URL, { cache: "no-store", signal: ctrl.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data || typeof data !== "object") throw new Error("想定外の応答");
+      state.ip = { status: "shown", data };
+    } catch {
+      state.ip = { status: "error", data: null };
+    } finally {
+      clearTimeout(timeout);
+    }
+    renderIp();
+  }
+
+  function renderIp() {
+    const body = $("ip-body");
+    const { status } = state.ip;
+    if (status === "shown") {
+      body.innerHTML = `<dl id="d-ip"></dl><div class="ip-actions"><button type="button" id="btn-ip-hide">隠す</button></div>`;
+      renderList($("d-ip"), ipRows(state.ip.data));
+      $("btn-ip-hide").addEventListener("click", () => { state.ip = { status: "idle", data: null }; renderIp(); });
+      return;
+    }
+    const error = status === "error"
+      ? `<p class="ip-error">取得できなかった。外部への通信が制限された環境（claude.ai 上の公開ページなど）では使えない。手元で使うには、ファイルを置いたフォルダで <code>python3 -m http.server</code> を実行し、表示された URL から開く。</p>`
+      : "";
+    body.innerHTML = `<p class="ip-intro">押した時だけ外部サービス ipinfo.io に問い合わせて表示する。IPアドレスは個人の特定につながるので、画面共有中は表示しない方がいい。</p>`
+      + error
+      + `<div class="ip-actions"><button type="button" id="btn-ip-show" ${status === "loading" ? "disabled" : ""}>${status === "loading" ? "取得中…" : "表示する"}</button></div>`;
+    $("btn-ip-show").addEventListener("click", fetchIp);
+  }
+
+  // ---------- 詳細の行データ（画面表示とコピーで共用） ----------
+  function netRows() {
+    return [
+      ["接続", navigator.onLine ? "オンライン" : "オフライン"],
+      ["回線種別", connTypeLabel(conn), conn && !conn.type ? "PCのブラウザでは通常公開されない" : undefined],
+      ["回線品質", effectiveTypeLabel(conn)],
+      ["下り帯域（推定）", conn?.downlink != null ? `${conn.downlink} Mbps` : null, conn?.downlink >= 10 ? "上限値。実際はこれ以上の可能性あり" : undefined],
+      ["RTT（推定）", conn?.rtt != null ? `${conn.rtt} ms` : null, conn?.rtt != null ? "25ms単位に丸められた推定値" : undefined],
+      ["データセーバー", conn ? (conn.saveData ? "有効" : "無効") : null],
+    ];
+  }
+
+  function deviceRows() {
+    const uad = navigator.userAgentData;
+    const hi = state.uaHigh;
+    const brand = uad?.brands?.filter((b) => !/Not.?A.?Brand/i.test(b.brand)).map((b) => `${b.brand} ${b.version}`).join(", ");
+    return [
+      ["OS", hi?.platform ? `${hi.platform}${hi.platformVersion ? " " + hi.platformVersion : ""}` : uad?.platform || navigator.platform || null],
+      ["ブラウザ", brand || null, brand ? undefined : "User-Agent を下に表示"],
+      ["端末種別", uad ? (uad.mobile ? "モバイル" : "デスクトップ") : (/Mobi/i.test(navigator.userAgent) ? "モバイル" : "デスクトップ")],
+      ["CPU アーキテクチャ", hi?.architecture ? `${hi.architecture}${hi.bitness ? " / " + hi.bitness + "bit" : ""}` : null],
+      ["CPU 論理コア数", navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency}` : null],
+      ["GPU", gpuName()],
+      ["機種名", hi?.model || null],
+      ["言語", navigator.language || null],
+      ["タイムゾーン", Intl.DateTimeFormat().resolvedOptions().timeZone || null],
+      ["タッチ操作", navigator.maxTouchPoints == null ? null : navigator.maxTouchPoints > 0 ? `対応（最大 ${navigator.maxTouchPoints} 点）` : "非対応"],
+      ["User-Agent", navigator.userAgent],
+    ];
+  }
+
+  function screenRows() {
+    const s = window.screen;
+    const orient = s.orientation?.type?.startsWith("portrait") ? "縦向き" : s.orientation?.type ? "横向き" : null;
+    return [
+      ["画面解像度", `${s.width} × ${s.height}`],
+      ["実ピクセル", `${Math.round(s.width * devicePixelRatio)} × ${Math.round(s.height * devicePixelRatio)}`],
+      ["ピクセル比", `${devicePixelRatio}`],
+      ["表示領域", `${innerWidth} × ${innerHeight}`],
+      ["色深度", `${s.colorDepth} bit`],
+      ["画面の向き", orient],
+      ["OSのテーマ設定", matchMedia("(prefers-color-scheme: dark)").matches ? "ダーク" : "ライト"],
+      ["視差効果を減らす", matchMedia("(prefers-reduced-motion: reduce)").matches ? "有効" : "無効"],
+    ];
+  }
+
+  function storageRows() {
+    const mem = performance.memory;
+    const st = state.storage;
+    const b = state.battery;
+    const stPct = st?.quota ? ` （${((st.usage / st.quota) * 100).toFixed(2)}%）` : "";
+    const batteryTime = batteryTimeText(b);
+    return [
+      ["端末メモリ", navigator.deviceMemory ? `${navigator.deviceMemory} GB` : null, navigator.deviceMemory ? "概算値。8GB が上限として丸められる" : undefined],
+      ["JS ヒープ使用量", mem ? fmtBytes(mem.usedJSHeapSize) : null],
+      ["JS ヒープ上限", mem ? fmtBytes(mem.jsHeapSizeLimit) : null],
+      ["ストレージ使用量", st?.usage != null ? `${fmtBytes(st.usage)}${stPct}` : null, "このページ（サイト）が使っている分"],
+      ["ストレージ割当", st?.quota != null ? fmtBytes(st.quota) : null],
+      ["バッテリー残り時間", batteryTime],
+    ];
+  }
+
+  // WebGL の拡張から GPU 名を得る。一度だけ調べて使い回す
+  let gpuCache;
+  function gpuName() {
+    if (gpuCache !== undefined) return gpuCache;
+    gpuCache = null;
+    try {
+      const gl = document.createElement("canvas").getContext("webgl");
+      const ext = gl?.getExtension("WEBGL_debug_renderer_info");
+      // 拡張が無い時の RENDERER は「WebKit WebGL」等の実名でない値なので使わない
+      gpuCache = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || null : null;
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch { /* WebGL が無効な環境 */ }
+    return gpuCache;
+  }
+
+  // rows: [ラベル, 値(文字列 or null), 補足?]。値が null のものは「取得不可」と表示する
+  function renderList(el, rows) {
+    el.innerHTML = rows.map(([label, value, note]) => {
+      const noteHtml = note ? `<span class="note">${escapeHtml(note)}</span>` : "";
+      if (value == null || value === "") {
+        return `<dt>${escapeHtml(label)}</dt><dd class="na">取得不可${noteHtml}</dd>`;
+      }
+      return `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}${noteHtml}</dd>`;
+    }).join("");
+  }
+
+  // ---------- 描画 ----------
+  function renderTiles() {
+    // 接続状態
+    $("t-online").innerHTML = navigator.onLine ? chip("good", "オンライン") : chip("bad", "オフライン");
+    const ct = connTypeLabel(conn);
+    $("t-online-foot").textContent = ct ? `回線種別: ${ct}` : "回線種別: 取得不可";
+
+    // 応答時間
+    const last = state.samples.length ? state.samples[state.samples.length - 1] : undefined;
+    if (last === undefined) {
+      $("t-latency").textContent = "—";
+      $("t-latency-foot").textContent = "計測中…";
+    } else if (last === null) {
+      $("t-latency").textContent = "—";
+      $("t-latency-foot").innerHTML = chip("bad", "計測失敗");
+    } else {
+      $("t-latency").innerHTML = `${last}<small>ms</small>`;
+      $("t-latency-foot").innerHTML = chip(levelLatency(last));
+    }
+
+    // 下り帯域
+    const dl = conn?.downlink ?? null;
+    if (dl == null) {
+      $("t-downlink").textContent = "—";
+      $("t-downlink-foot").textContent = "このブラウザでは取得不可";
+    } else {
+      $("t-downlink").innerHTML = `${dl >= 10 ? "10+" : dl}<small>Mbps</small>`;
+      $("t-downlink-foot").innerHTML = `${chip(levelDownlink(dl))} ${escapeHtml(effectiveTypeLabel(conn) ?? "")}`;
+    }
+
+    // バッテリー
+    const b = state.battery;
+    if (!b) {
+      $("t-battery").textContent = "—";
+      $("t-battery-foot").textContent = "このブラウザでは取得不可";
+    } else {
+      $("t-battery").innerHTML = `${Math.round(b.level * 100)}<small>%</small>`;
+      const label = b.charging
+        ? (b.level >= 1 ? "満充電" : "充電中")
+        : levelBattery(b) === "good" ? "放電中" : "残量少";
+      $("t-battery-foot").innerHTML = chip(levelBattery(b), label);
+    }
+  }
+
+  function renderStats() {
+    const s = latencyStats(state.samples);
+    $("s-fail").textContent = `${s.fail}`;
+    $("s-min").textContent = s.min == null ? "—" : fmtMs(s.min);
+    $("s-avg").textContent = s.avg == null ? "—" : fmtMs(s.avg);
+    $("s-max").textContent = s.max == null ? "—" : fmtMs(s.max);
+    $("s-jit").textContent = s.jit == null ? "—" : fmtMs(s.jit);
+  }
+
+  function renderChart() {
+    const svg = $("chart");
+    const W = Math.max(280, Math.round(svg.clientWidth || 640)), H = 160, L = 48, R = 12, T = 12, B = 22;
+    const pw = W - L - R, ph = H - T - B;
+    const max = axisMax(state.samples);
+    const x = (i) => L + (i / (HISTORY - 1)) * pw;
+    const y = (v) => T + ph - (v / max) * ph;
+
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    let out = "";
+    // 目盛り（0・中間・最大）
+    for (const v of [0, max / 2, max]) {
+      out += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
+      out += `<text class="axis" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    }
+    out += `<text class="axis" x="${L - 8}" y="${H - 4}" text-anchor="end">ms</text>`;
+    out += `<text class="axis" x="${W - R}" y="${H - 4}" text-anchor="end">現在</text>`;
+
+    if (!state.samples.length) {
+      out += `<text class="chart-empty" x="${L + pw / 2}" y="${T + ph / 2}" text-anchor="middle">計測中…</text>`;
+      svg.innerHTML = out;
+      return;
+    }
+
+    // 最新サンプルを右端に揃える。失敗サンプルで線を切る
+    const offset = HISTORY - state.samples.length;
+    const segments = [];
+    let cur = [];
+    state.samples.forEach((v, i) => {
+      if (v == null) {
+        if (cur.length) segments.push(cur);
+        cur = [];
+        out += `<circle class="fail" cx="${x(i + offset)}" cy="${T + ph}" r="3"/>`;
+      } else if (v > max) {
+        // 軸の上限を超えた突出値。線はつなげず、上端に印を置く
+        if (cur.length) segments.push(cur);
+        cur = [];
+        out += `<polygon class="over" points="${x(i + offset) - 4},${T + 8} ${x(i + offset) + 4},${T + 8} ${x(i + offset)},${T}"/>`;
+      } else {
+        cur.push([x(i + offset), y(v)]);
+      }
+    });
+    if (cur.length) segments.push(cur);
+
+    for (const seg of segments) {
+      if (seg.length === 1) {
+        // 失敗に挟まれた単独の成功値も点で見せる
+        out += `<circle class="dot" cx="${seg[0][0].toFixed(1)}" cy="${seg[0][1].toFixed(1)}" r="3"/>`;
+        continue;
+      }
+      const pts = seg.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" ");
+      const base = T + ph;
+      out += `<polygon class="area" points="${seg[0][0].toFixed(1)},${base} ${pts} ${seg[seg.length - 1][0].toFixed(1)},${base}"/>`;
+      out += `<polyline class="ln" points="${pts}"/>`;
+    }
+    const lastIdx = state.samples.length - 1;
+    const lastVal = state.samples[lastIdx];
+    if (lastVal != null && lastVal <= max) {
+      out += `<circle class="dot" cx="${x(lastIdx + offset)}" cy="${y(lastVal)}" r="4.5"/>`;
+    }
+    svg.innerHTML = out;
+  }
+
+  function renderDetails() {
+    renderList($("d-net"), netRows());
+    renderList($("d-device"), deviceRows());
+    renderList($("d-screen"), screenRows());
+    renderList($("d-storage"), storageRows());
+  }
+
+  function render() {
+    renderTiles();
+    renderStats();
+    renderDetails();
+    renderChart();
+    const t = state.measuredAt ? fmtTime(state.measuredAt) : "—";
+    $("stamp").textContent = state.paused ? `停止中（最終計測 ${t}）` : `最終計測 ${t}`;
+  }
+
+  // ---------- 結果のコピー ----------
+  function buildReport() {
+    const lines = [];
+    const now = new Date();
+    lines.push(`ブラウザ端末モニタ ${now.toLocaleDateString("ja-JP")} ${fmtTime(now)}`);
+    const section = (title, rows) => {
+      lines.push("", `[${title}]`);
+      rows.forEach(([label, value]) => lines.push(`${label}: ${value == null || value === "" ? "取得不可" : value}`));
+    };
+    const s = latencyStats(state.samples);
+    const last = state.samples[state.samples.length - 1];
+    section("応答時間（実測）", [
+      ["最新", last == null ? (state.samples.length ? "計測失敗" : null) : fmtMs(last)],
+      ["平均", s.avg == null ? null : fmtMs(s.avg)],
+      ["最小 / 最大", s.min == null ? null : `${fmtMs(s.min)} / ${fmtMs(s.max)}`],
+      ["揺らぎ（ジッター）", s.jit == null ? null : fmtMs(s.jit)],
+      ["失敗", `${s.fail} / ${state.samples.length} 回`],
+    ]);
+    section("ネットワーク", netRows());
+    if (state.speed.result) {
+      const { down, up } = state.speed.result;
+      const rows = (label, r) => r ? [
+        [`${label} 最高速度`, fmtMbps(r.peakMbps)],
+        [`${label} 平均速度`, fmtMbps(r.avgMbps)],
+        [`${label} 通信量 / 所要時間`, `${fmtBytes(r.totalBytes)} / ${(r.durationMs / 1000).toFixed(1)} 秒`],
+        [`${label} 打ち切り`, r.endedBy === "bytes" ? "通信量の上限" : r.endedBy === "time" ? "測定時間" : "相手側の終了"],
+      ] : [[`${label}`, "測定失敗"]];
+      section(state.speed.status === "done" ? "回線速度の測定" : "回線速度の測定（前回の結果）",
+        [...rows("下り", down), ...rows("上り", up)]);
+    }
+    if (state.ip.status === "shown") section("グローバルIP・プロバイダ", ipRows(state.ip.data));
+    section("端末", deviceRows());
+    section("画面・表示", screenRows());
+    section("メモリ・ストレージ", [
+      ...storageRows(),
+      ["バッテリー残量", state.battery ? `${Math.round(state.battery.level * 100)}%` : null],
+    ]);
+    if (state.timing) {
+      section("ページ読み込みの内訳", [
+        ...state.timing.phases.map(([label, v]) => [label, fmtMs(Math.max(0, v))]),
+        ...timingRows(state.timing),
+      ]);
+    }
+    if (state.events.length) {
+      lines.push("", "[接続イベント]");
+      state.events.forEach((e) => lines.push(`${fmtTime(e.at)} ${e.tag} ${e.message}`));
+    }
+    return lines.join("\n");
+  }
+
+  // 埋め込み環境では Clipboard API が拒否されることがあるため、選択してコピーする方法で再試行する
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch { ok = false; }
+      ta.remove();
+      return ok;
+    }
+  }
+
+  let copyResetTimer = null;
+  $("btn-copy").addEventListener("click", async () => {
+    const ok = await copyText(buildReport());
+    const btn = $("btn-copy");
+    btn.textContent = ok ? "コピーした" : "コピーできなかった";
+    clearTimeout(copyResetTimer);
+    copyResetTimer = setTimeout(() => (btn.textContent = "結果をコピー"), 2000);
+  });
+
+  // ---------- 自動更新 ----------
+  function start() {
+    stop();
+    state.timer = setInterval(tick, INTERVAL_MS);
+  }
+  function stop() {
+    if (state.timer) clearInterval(state.timer);
+    state.timer = null;
+  }
+
+  $("btn-pause").addEventListener("click", () => {
+    state.paused = !state.paused;
+    $("btn-pause").textContent = state.paused ? "再開" : "一時停止";
+    state.paused || state.speed.status === "running" ? stop() : start();
+    render();
+  });
+  $("btn-now").addEventListener("click", tick);
+
+  window.addEventListener("online", () => { logEvent("good", "接続", "オンラインに戻った"); render(); });
+  window.addEventListener("offline", () => { logEvent("bad", "切断", "オフラインになった"); render(); });
+  window.addEventListener("resize", renderDetails);
+  conn?.addEventListener?.("change", onConnChange);
+
+  // 親要素の幅が変わった時（スクロールバーの出現など）もグラフを描き直す。高さの変化では描き直さない
+  let chartWidth = 0;
+  new ResizeObserver(([entry]) => {
+    const w = Math.round(entry.contentRect.width);
+    if (w !== chartWidth) { chartWidth = w; renderChart(); }
+  }).observe($("chart"));
+
+  // load イベントの処理が終わった後でないと loadEventEnd が確定しない
+  function captureTiming() {
+    setTimeout(() => { state.timing = collectTiming(); state.timingReady = true; renderTiming(); }, 0);
+  }
+  // module スクリプトは HTML の解析直後に実行されるので、この時点では読み込みは未完了
+  window.addEventListener("load", captureTiming);
+
+  // ---------- 初期化 ----------
+  (async function init() {
+    state.prevConn = snapshotConn();
+    logEvent("na", "開始", navigator.onLine ? "モニタを開始した（オンライン）" : "モニタを開始した（オフライン）");
+    renderTiming();
+    renderIp();
+    renderSpeed();
+    render();
+    if (navigator.getBattery) {
+      try {
+        state.battery = await navigator.getBattery();
+        ["levelchange", "chargingtimechange", "dischargingtimechange"]
+          .forEach((ev) => state.battery.addEventListener(ev, render));
+        state.battery.addEventListener("chargingchange", () => {
+          logEvent("na", "電源", state.battery.charging ? "充電を開始した" : "充電を停止した");
+          render();
+        });
+      } catch { /* 権限ポリシーで拒否される環境がある */ }
+    }
+    if (navigator.userAgentData?.getHighEntropyValues) {
+      try {
+        state.uaHigh = await navigator.userAgentData.getHighEntropyValues(
+          ["platform", "platformVersion", "architecture", "bitness", "model"]);
+      } catch { /* 取得できなければ低精度の値で表示する */ }
+    }
+    await tick();
+    // 初回計測中に一時停止された、または速度測定が始まった場合は自動更新を始めない
+    if (!state.paused && state.speed.status !== "running") start();
+  })();
+</script>
