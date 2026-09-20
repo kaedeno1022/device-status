@@ -23,19 +23,22 @@ python3 -m http.server
 
 ## 外部通信とプライバシー
 
-サーバー側の処理はなく、計測はすべてブラウザ上で行う。ただし次の外部サービスにアクセスする。
+このページ自体は独自のサーバー処理を持たず、端末情報の収集はすべてブラウザ上で行う。端末情報（User-Agent・GPUなど）を外部へ送る処理はない。通信は次の宛先に対して発生する。
 
 | 用途 | 宛先 | 送られる情報 |
 | --- | --- | --- |
+| 応答時間の測定 | 配信元（GitHub Pages） | 自ページ URL への `HEAD` リクエストを5秒ごとに送る |
 | グローバルIP・プロバイダ取得 | `ipinfo.io` | 閲覧者のIPアドレス（通信の性質上、相手に見える） |
 | 回線速度測定 | `speed.cloudflare.com` | 測定用データの送受信（ボタン押下時のみ） |
-| Webフォント | `fonts.googleapis.com` / `fonts.gstatic.com` | フォント取得リクエスト |
+| Webフォント | `fonts.googleapis.com` / `fonts.gstatic.com` | フォント取得リクエスト（IPアドレスとReferer が Google に渡る） |
+
+回線速度測定は8本を並行して通信し、通信量は速度に比例して増える（上限は下り4GiB・上り2GiB）。モバイル回線では注意すること。
 
 外部通信が制限された環境ではIP取得・速度測定は失敗し、画面上にその旨が表示される。
 
 ## ブラウザ対応
 
-Network Information API・Battery Status API・`performance.memory` などは Chromium 系ブラウザのみ対応で、Safari/Firefox では該当項目が「—」表示になる。取得できない項目は判定なし（`na`）として扱う。
+Network Information API・Battery Status API・`performance.memory` などは Chromium 系ブラウザのみ対応で、Safari/Firefox では該当項目が「取得不可」と表示される（上部のタイルや統計では「—」）。
 
 ## 開発
 
