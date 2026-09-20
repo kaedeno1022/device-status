@@ -28,7 +28,7 @@ python3 -m http.server
 | 用途 | 宛先 | 送られる情報 |
 | --- | --- | --- |
 | 応答時間の測定 | 配信元（GitHub Pages） | 自ページ URL への `HEAD` リクエストを5秒ごとに送る |
-| グローバルIP・プロバイダ取得 | `ipinfo.io` | 閲覧者のIPアドレス（通信の性質上、相手に見える） |
+| グローバルIP・プロバイダ取得 | `ipinfo.io` | 閲覧者のIPアドレス（通信の性質上、相手に見える）。「表示する」ボタンを押した時のみ通信する |
 | 回線速度測定 | `speed.cloudflare.com` | 測定用データの送受信（ボタン押下時のみ） |
 | Webフォント | `fonts.googleapis.com` / `fonts.gstatic.com` | フォント取得リクエスト（IPアドレスとReferer が Google に渡る） |
 
@@ -38,7 +38,7 @@ python3 -m http.server
 
 ## ブラウザ対応
 
-Network Information API・Battery Status API・`performance.memory` などは Chromium 系ブラウザのみ対応で、Safari/Firefox では該当項目が「取得不可」と表示される（上部のタイルや統計では「—」）。
+Network Information API・Battery Status API・`performance.memory` などは Chromium 系ブラウザのみ対応で、Safari/Firefox では該当項目が「取得不可」と表示される（上部のタイルは値が「—」で、補足に「取得不可」と出る）。
 
 ## 開発
 
