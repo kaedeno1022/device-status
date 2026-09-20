@@ -7,7 +7,7 @@ import {
   escapeHtml, fmtBytes, fmtDuration, fmtTime, fmtMs,
   connTypeLabel, effectiveTypeLabel, batteryTimeText,
   latencyEventFor, connChanges, latencyStats, niceMax, median, axisMax,
-  fmtMbps, levelSpeed, summarizeSpeed, createRecorder,
+  fmtMbps, levelSpeed, speedThresholdNote, SPEED_GOOD_MBPS, SPEED_WARN_MBPS, summarizeSpeed, createRecorder,
   computeTiming, timingRows, ipRows,
 } from "./logic.js";
 
@@ -273,6 +273,15 @@ test("速度は 100Mbps 以上で良好、30Mbps 以上で注意、それ未満�
   assert.equal(levelSpeed(30), "warn");
   assert.equal(levelSpeed(29), "bad");
   assert.equal(levelSpeed(null), "na");
+  assert.equal(levelSpeed(0), "bad");
+});
+
+test("速度判定の注記は、判定に使うしきい値と同じ値を含む", () => {
+  const note = speedThresholdNote();
+  assert.ok(note.includes(`${SPEED_GOOD_MBPS} Mbps 以上が良好`));
+  assert.ok(note.includes(`${SPEED_WARN_MBPS} Mbps 以上が注意`));
+  assert.equal(levelSpeed(SPEED_GOOD_MBPS), "good");
+  assert.equal(levelSpeed(SPEED_WARN_MBPS), "warn");
 });
 
 test("記録器は同じ区間の受信をまとめ、区間の境界で区切る", () => {

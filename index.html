@@ -394,7 +394,7 @@
     escapeHtml, fmtBytes, fmtTime, fmtMs,
     connTypeLabel, effectiveTypeLabel, batteryTimeText,
     latencyEventFor, connChanges, latencyStats, axisMax,
-    fmtMbps, levelSpeed, summarizeSpeed, createRecorder,
+    fmtMbps, levelSpeed, speedThresholdNote, summarizeSpeed, createRecorder,
     computeTiming, timingRows, ipRows,
   } from "./logic.js";
 
@@ -761,7 +761,7 @@
       head = (status === "error" ? `<p class="speed-sub">下は前回の測定結果。</p>` : "")
         + `<div class="speed-result">${speedCells("下り", result.down)}${speedCells("上り", result.up)}</div>`
         + `<p class="speed-sub">${[speedNote("下り", result.down), speedNote("上り", result.up),
-            "最高速度は立ち上がりを除いた 0.25 秒ごとの最大値。"].filter(Boolean).join(" ")}</p>`;
+            "最高速度は立ち上がりを除いた 0.25 秒ごとの最大値。", speedThresholdNote()].filter(Boolean).join(" ")}</p>`;
     }
     if (status === "error") {
       head += `<p class="speed-error">測定できなかった。外部への通信が制限された環境（claude.ai 上の公開ページなど）では使えない。手元で使うには、ファイルを置いたフォルダで <code>python3 -m http.server</code> を実行し、表示された URL から開く。</p>`;

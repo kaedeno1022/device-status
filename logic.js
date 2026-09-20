@@ -159,9 +159,17 @@ export function fmtMbps(mbps) {
     : `${mbps.toFixed(2)} Mbps`;
 }
 
+// 速度測定の判定しきい値(Mbps)。下り・上りで共通。画面の注記にも同じ値を出す
+export const SPEED_GOOD_MBPS = 100;
+export const SPEED_WARN_MBPS = 30;
+
 export function levelSpeed(mbps) {
   if (mbps == null) return "na";
-  return mbps >= 100 ? "good" : mbps >= 30 ? "warn" : "bad";
+  return mbps >= SPEED_GOOD_MBPS ? "good" : mbps >= SPEED_WARN_MBPS ? "warn" : "bad";
+}
+
+export function speedThresholdNote() {
+  return `判定は最高速度で行い、${SPEED_GOOD_MBPS} Mbps 以上が良好、${SPEED_WARN_MBPS} Mbps 以上が注意、それ未満が不良（下り・上り共通）。`;
 }
 
 // 受信した塊をそのまま記録すると高速回線で数万件になるため、集計の区間（既定250ms）ごとにまとめる。
