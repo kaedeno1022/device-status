@@ -38,7 +38,7 @@ python3 -m http.server
 
 ## ブラウザ対応
 
-Network Information API・Battery Status API・`performance.memory` などは Chromium 系ブラウザのみ対応で、Safari/Firefox では該当項目が「取得不可」と表示される（上部のタイルは値が「—」で、補足に「取得不可」と出る）。
+Network Information API・Battery Status API・`performance.memory` などは Chromium 系ブラウザのみ対応で、Safari/Firefox では該当項目が「取得不可」と表示される（下り帯域・バッテリーのタイルは値が「—」になる）。
 
 ## 開発
 
